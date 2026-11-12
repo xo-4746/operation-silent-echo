@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Operation Silent Echo — DFIR Challenge</title>
+<style>
+  :root{--bg:#000000;--card:#030d07;--line:#173322;--txt:#b8e6c9;--mut:#5f8a6e;--acc:#00ff9c;--warn:#ffd54a;--red:#ff4d5e}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Consolas','Courier New',monospace;background:var(--bg);color:var(--txt);line-height:1.55}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.9rem;margin:0 0 6px;text-shadow:0 0 12px rgba(0,255,156,.55);letter-spacing:1px}
+  h2{font-size:1.15rem;margin:0;text-shadow:0 0 8px rgba(0,255,156,.35);letter-spacing:.5px}
+  .sub{color:var(--mut);margin-bottom:24px}
+  .brief{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:24px}
+  .brief code{background:#04120a;padding:2px 6px;border:1px solid #1d3a26;border-radius:4px;color:#00ff9c}
+  .progress{position:sticky;top:0;z-index:5;background:#000000;padding:10px 0;border-bottom:1px solid #1d3a26;margin-bottom:26px}
+  .bar{height:10px;background:#000000;border-radius:6px;overflow:hidden;border:1px solid #1d3a26}
+  .bar>div{height:100%;width:0%;background:linear-gradient(90deg,#00b36b,#00ff9c);box-shadow:0 0 10px rgba(0,255,156,.6);transition:width .5s}
+  .ptext{font-size:.85rem;color:var(--mut);margin:6px 0 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:22px}
+  .card.solved{border-color:#00ff9c;box-shadow:0 0 14px rgba(0,255,156,.35)}
+  .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .meta{color:var(--mut);font-size:.8rem}
+  .badge{font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--mut)}
+  .solved .badge{border-color:#00ff9c;color:#00ff9c;text-shadow:0 0 6px rgba(0,255,156,.5)}
+  .hint{border-left:3px solid var(--warn);background:#08180e;padding:8px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.92rem;display:none}
+  .hintbtn{background:none;border:none;color:#ffd54a;cursor:pointer;font-size:.85rem;padding:4px 0;font-family:inherit;text-decoration:none;border-bottom:1px dashed #ffd54a}
+  .ans{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .ans input{flex:1;min-width:220px;background:#04120a;border:1px solid #1d3a26;border-radius:4px;padding:10px 14px;color:#00ff9c;font-family:monospace;caret-color:#00ff9c}
+  .ans input:focus{outline:none;border-color:#00ff9c;box-shadow:0 0 8px rgba(0,255,156,.5)}
+  .ans button{background:#00ff9c;border:1px solid #00ff9c;border-radius:8px;padding:10px 22px;font-weight:700;color:#02120a;cursor:pointer;box-shadow:0 0 10px rgba(0,255,156,.45);font-family:inherit}
+  .ans button:hover{box-shadow:0 0 16px rgba(0,255,156,.8);filter:brightness(1.15)}
+  .msg{font-size:.85rem;margin-top:8px;min-height:1.2em}
+  .ok{color:var(--acc)} .bad{color:var(--red)}
+  table{width:100%;border-collapse:collapse;font-size:.85rem;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+  th{background:#08180e;color:var(--mut);font-weight:600}
+  .note{color:var(--mut);font-size:.85rem;font-style:italic}
+  .lesson{display:none;margin-top:12px;background:#08180e;border:1px solid #1d6b41;border-radius:10px;padding:12px 16px;font-size:.92rem}
+  .btn2{background:#08180e;border:1px solid #1d3a26;color:#00ff9c;border-radius:4px;padding:8px 16px;cursor:pointer;font-family:inherit}
+  #finale{display:none;text-align:center;border-color:var(--acc)}
+  .badge-art{background:#fff;border-radius:8px;padding:8px;display:inline-block}
+  code.mon{color:#00ff9c;font-family:monospace;text-shadow:0 0 6px rgba(0,255,156,.4)}
+  footer{color:var(--mut);font-size:.8rem;margin-top:40px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============================================================ -->
+<div>
+  <h1>🛡️ Operation Silent Echo</h1>
+  <p class="sub">Intermediate · Digital Forensics &amp; Incident Response · 6 flags · Flag format: <code class="mon">flag{...}</code></p>
+</div>
+
+<div class="brief">
+  <h2>📋 Incident brief</h2>
+  <p>At 08:42 AM, security monitoring at <b>Apex Dynamics</b> generated an alert for unusual DNS traffic from a finance department workstation. Initial review found evidence of unauthorized data access, suspicious browser activity, and outbound communications inconsistent with normal business operations. The SOC has escalated the event to the Digital Forensics and Incident Response team. The attacker — who signs themselves <b>"Echo"</b> — left markers across the recovered artifacts. Your mission: reconstruct the attack timeline, identify the attacker's methods, determine the scope of compromise, and recover all <b>six flags</b>. The organization fears sensitive financial records may have been accessed or exfiltrated.</p>
+  <p><b>Tools:</b> only your browser — View Source (Ctrl+U), DevTools (F12: Elements, Console, Application tabs), and your brain. Everything is in this single file. <b>No real organization is involved — this is a simulation.</b></p>
+</div>
+
+<div class="progress">
+  <div class="bar"><div id="barfill"></div></div>
+  <p class="ptext"><span id="score">0</span>/6 flags recovered <span id="ptext2"></span></p>
+</div>
+
+<!-- ============================================================ -->
+<div class="card" id="c1">
+  <div class="head"><h2>Case 1 — The sloppy developer</h2><span class="badge">unsolved</span><span class="meta">Echo's first marker</span></div>
+  <p>The finance team's intranet portal was built in a hurry by a junior developer, who was told to "remove all debug stuff" before go-live. They missed one thing — and Echo knows how to read source code. Find Echo's first marker.</p>
+  <button class="hintbtn" onclick="document.getElementById('h1').style.display='block'">💡 Hint</button>
+  <div class="hint" id="h1">"Debug stuff" in web pages often hides in HTML comments. View the page source (Ctrl+U) and look for something that doesn't belong. What format do developers use to encode binary-ish data in text?</div>
+  <div class="ans"><input id="i1" placeholder="flag{...}" autocomplete="off"><button onclick="check(1)">Submit</button></div>
+  <div class="msg" id="m1"></div>
+  <div class="lesson" id="l1">📌 <b>Debrief:</b> Debug leftovers in production HTML — comments, disabled fields, hidden inputs — are a real and common leak. Part of every security review: check what shipped, not what was intended. (Relevant to secure code review and incident-response practice.)</div>
+</div>
+
+<!-- developer comment with base64 flag -->
+<!-- TODO before go-live: remove debug marker. b64: ZmxhZ3t2MTN3X3MwdXJjM30= -->
+
+<!-- ============================================================ -->
+<div class="card" id="c2">
+  <div class="head"><h2>Case 2 — The audit log that talked</h2><span class="badge">unsolved</span><span class="meta">from the finance application audit logs</span></div>
+  <p>A snippet of the finance application audit log survived. Echo's exfiltration tool left an encoded signature in one request. Decode it.</p>
+  <table>
+    <tr><th>Time</th><th>Source IP</th><th>User</th><th>Action</th><th>Detail</th></tr>
+    <tr><td>03:41:19</td><td>10.20.5.114</td><td>finance.wkstn-04</td><td>LEDGER_VIEW</td><td>record: INV-77421</td></tr>
+    <tr><td>03:41:22</td><td>10.20.9.66</td><td>svc_backup</td><td>EXPORT_CSV</td><td>payload=ae71c9f03b2d</td></tr>
+    <tr><td>03:41:24</td><td>10.20.9.66</td><td>svc_backup</td><td>EXPORT_CSV</td><td>payload=666c61677b6c3067735f64306e745f6c31337d</td></tr>
+    <tr><td>03:41:26</td><td>10.20.5.114</td><td>finance.wkstn-04</td><td>LEDGER_VIEW</td><td>record: INV-88017</td></tr>
+  </table>
+  <p class="note">Notice: <code class="mon">svc_backup</code> should never EXPORT CSV at 03:41 — and <code class="mon">finance.wkstn-04</code> should not be running queries at that hour. The <code class="mon">svc_backup</code> account is worth investigating further in Case 3.</p>
+  <button class="hintbtn" onclick="document.getElementById('h2').style.display='block'">💡 Hint</button>
+  <div class="hint" id="h2">One payload is much longer than the others. Hexadecimal. Two characters per byte. Any online/offline hex decoder works — or count: does the string start with <code class="mon">666c</code>...? What's 0x66, 0x6c?</div>
+  <div class="ans"><input id="i2" placeholder="flag{...}" autocomplete="off"><button onclick="check(2)">Submit</button></div>
+  <div class="msg" id="m2"></div>
+  <div class="lesson" id="l2">📌 <b>Debrief:</b> Audit-log review is core incident-response work. Red flags here — service accounts performing human actions, exports at odd hours, anomalous payload sizes. This is exactly the log evidence a SIEM should alert on.</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="card" id="c3">
+  <div class="head"><h2>Case 3 — The session jar</h2><span class="badge">unsolved</span><span class="meta">admin portal artefacts</span></div>
+  <p>Echo used the compromised <code class="mon">svc_backup</code> account to touch the finance admin portal. The portal stores its state in your browser — but it's disguised. Log in below and inspect what it leaves behind.</p>
+  <p><button class="btn2" onclick="doAdminLogin()">🔐 Log in to admin portal as svc_backup</button></p>
+  <button class="hintbtn" onclick="document.getElementById('h3').style.display='block'">💡 Hint</button>
+  <div class="hint" id="h3">F12 → Application tab → Local Storage (or Storage). One key looks odd. The value is encoded with the most famous letter-shift cipher — 13 positions. (Also check the Console tab — the portal chatty-logs its session.)</div>
+  <div class="ans"><input id="i3" placeholder="flag{...}" autocomplete="off"><button onclick="check(3)">Submit</button></div>
+  <div class="msg" id="m3"></div>
+  <div class="lesson" id="l3">📌 <b>Debrief:</b> Browser storage (localStorage, cookies, sessionStorage) routinely holds session tokens and user data. Credentials and sessions harvested from a compromised finance workstation are how attackers move from "one weird DNS alert" to full application access — this is exactly the "suspicious browser activity" the SOC flagged in the brief.</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="card" id="c4">
+  <div class="head"><h2>Case 4 — The contractor badge</h2><span class="badge">unsolved</span><span class="meta">from the HR contractor-badge system</span></div>
+  <p>The HR system renders this "digital contractor badge" for the intranet using a small embedded vector image. Echo claims the fourth marker is drawn right on it — but nobody sees it. Inspect the badge itself.</p>
+  <div class="badge-art">
+  <svg width="300" height="170" viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="contractor badge">
+    <rect width="300" height="170" rx="12" fill="#020c06"/>
+    <text x="150" y="40" text-anchor="middle" fill="#fff" font-size="18" font-family="sans-serif">APEX DYNAMICS</text>
+    <text x="150" y="66" text-anchor="middle" fill="#5f8a6e" font-size="12" font-family="sans-serif">CONTRACTOR — DAY PASS</text>
+    <rect x="70" y="90" width="160" height="12" rx="6" fill="#1d3a26"/>
+    <text x="150" y="100" text-anchor="middle" fill="#020c06" font-size="8" font-family="monospace">·····-·····-·····</text>
+    <desc>part2: d3n_1n_pl41</desc>
+    <metadata>part3: n_s1ght}</metadata>
+    <text x="10" y="164" font-size="7" fill="#010805" opacity="0.55" font-family="monospace">part1: flag{h1d</text>
+  </svg>
+  </div>
+  <button class="hintbtn" onclick="document.getElementById('h4').style.display='block'">💡 Hint</button>
+  <div class="hint" id="h4">SVG images are text. Right-click the badge → Inspect. Three "parts" hide at different visibility levels: one in a nearly-invisible colour, one in a &lt;desc&gt;, one in &lt;metadata&gt;. Join part1 + part2 + part3 in order.</div>
+  <div class="ans"><input id="i4" placeholder="flag{...}" autocomplete="off"><button onclick="check(4)">Submit</button></div>
+  <div class="msg" id="m4"></div>
+  <div class="lesson" id="l4">📌 <b>Debrief:</b> Images and documents leak metadata — SVG text layers, EXIF, document author fields. "Invisible" is not "removed". Never accept a file at face value during an investigation.</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="card" id="c5">
+  <div class="head"><h2>Case 5 — DNS whisperer</h2><span class="badge">unsolved</span><span class="meta">from the corporate DNS resolver logs</span></div>
+  <p>These lookups from <code class="mon">finance.wkstn-04</code> are what triggered the 08:42 alert. Legit monitoring queries to the "metrics CDN" look random. Three of them don't. Reassemble the message — this is Echo's exfiltration channel.</p>
+  <table>
+    <tr><th>Timestamp</th><th>Query</th></tr>
+    <tr><td>03:41:22</td><td>b2-flag{dn.cdn-metrics.in</td></tr>
+    <tr><td>03:41:25</td><td>x1-s_3xf1l.cdn-metrics.in</td></tr>
+    <tr><td>03:41:31</td><td>k7-3ad91c44.cdn-metrics.in</td></tr>
+    <tr><td>03:41:27</td><td>q4-}.cdn-metrics.in</td></tr>
+    <tr><td>03:41:02</td><td>a9-eb1187f2.cdn-metrics.in</td></tr>
+    <tr><td>03:41:05</td><td>m3-90c2aa41.cdn-metrics.in</td></tr>
+    <tr><td>03:41:08</td><td>t8-5d77be0c.cdn-metrics.in</td></tr>
+    <tr><td>03:41:34</td><td>z2-04f9b8d1.cdn-metrics.in</td></tr>
+    <tr><td>03:41:37</td><td>w6-71e3cc20.cdn-metrics.in</td></tr>
+    <tr><td>03:41:40</td><td>r1-c88a09f7.cdn-metrics.in</td></tr>
+  </table>
+  <button class="hintbtn" onclick="document.getElementById('h5').style.display='block'">💡 Hint</button>
+  <div class="hint" id="h5">Data exfiltration over DNS hides chunks of data in subdomain labels. Three queries stand out from the random-looking noise. Sort them by timestamp and strip the <code class="mon">xx-</code> prefix; concatenate in time order.</div>
+  <div class="ans"><input id="i5" placeholder="flag{...}" autocomplete="off"><button onclick="check(5)">Submit</button></div>
+  <div class="msg" id="m5"></div>
+  <div class="lesson" id="l5">📌 <b>Debrief:</b> DNS tunnelling is a classic exfiltration channel that bypasses egress rules — a firewall that only inspects HTTP will miss it entirely. This is precisely how "unusual DNS traffic" becomes a data-breach notification. Detection rules for anomalous query entropy and volume belong in your SIEM.</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="card" id="c6">
+  <div class="head"><h2>Case 6 — The ransom note</h2><span class="badge">unsolved</span><span class="meta">final challenge</span></div>
+  <p>On the finance file-server console, Echo left this note. It is a Caesar cipher — but not the one you used in Case 3. The shift equals the number of letters in the IT asset that was compromised in Case 2 (<code class="mon">svc</code> + <code class="mon">_</code> + ??? — count the letters of the whole username).</p>
+  <div class="brief" style="margin:10px 0"><code class="mon" style="font-size:1.05rem">oujp{o0a3wb1lb_f1w}</code></div>
+  <button class="hintbtn" onclick="document.getElementById('h6').style.display='block'">💡 Hint</button>
+  <div class="hint" id="h6">The compromised account in Case 2's log is <code class="mon">svc_backup</code> — count its letters (9). Undo a Caesar shift of 9... and if the result looks wrong, try it in the other direction (shift −9, i.e. +17). Letters only; the symbols stay put.</div>
+  <div class="ans"><input id="i6" placeholder="flag{...}" autocomplete="off"><button onclick="check(6)">Submit</button></div>
+  <div class="msg" id="m6"></div>
+  <div class="lesson" id="l6">📌 <b>Debrief:</b> Classic ciphers still appear in malware notes, scratchpads and C2 strings. Knowing which shift/cipher was used comes from context clues — the attacker's habits across the whole incident. Forensics is pattern-work across artifacts.</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="card" id="finale">
+  <h2>🎉 Breach confirmed — all flags recovered!</h2>
+  <p>Echo's six markers are decoded. Your incident timeline: the <code class="mon">svc_backup</code> service account was misused to run CSV exports of financial records at 03:41, the finance admin portal's browser session was tampered with on a compromised workstation, and the data left the network via DNS tunnelling to a fake "metrics CDN" — the traffic that finally triggered the 08:42 alert.</p>
+  <p><b>Recommended actions:</b> isolate <code class="mon">finance.wkstn-04</code>, rotate the <code class="mon">svc_backup</code> credentials, block and sinkhole the fake CDN domain, review what the service account exported, and add export-anomaly and DNS-entropy rules to SIEM monitoring.</p>
+  <p class="note">You have completed Operation Silent Echo. Discuss the debriefs with your mentor and map each case to a real DFIR capability.</p>
+</div>
+
+<footer>Security training exercise · Simulation only · No real organization · Flag hashes verified locally</footer>
+</div>
+
+<script>
+// ---- challenge 3 admin login artefact ----
+function doAdminLogin(){
+  try{ localStorage.setItem("portal.session.user","svc_backup"); }catch(e){}
+  try{ localStorage.setItem("portal.session.token","a91f-77bc-02de"); }catch(e){}
+  try{ localStorage.setItem("portal.theme.backup","synt{p00x13_w4e}"); }catch(e){}
+  console.log("%c[admin-portal] session restored for svc_backup","color:#39d98a");
+  console.log("%c[admin-portal] note: theme.backup key is set (debug)","color:#8fa3c0");
+  console.log("%c[admin-portal] 3 storage keys written. Application tab → Local Storage.","color:#8fa3c0");
+  var el=document.getElementById("c3");
+  var s=document.createElement("p");
+  s.innerHTML="<code class='mon'>✔ Logged in. Portal UI unavailable (server offline) — but your browser now holds the session.</code>";
+  el.insertBefore(s, el.querySelector(".hintbtn"));
+}
+
+// ---- flag checking (sha256, answers never in plaintext) ----
+const HASHES={
+1:"2a3eac58fd3e247cb987bde1dcf5eb33177ff86cc802e9ec37d2d4b72eba1b5f",
+2:"699af341b8ad23f9e2501b741c7be4bd7d1211d30e24ae27087de07cfbd63bf2",
+3:"b42a6f234ad19a282cba456250f559d4c8fcacb9de2c528bba7a3ceebe3647ba",
+4:"d6d130d0d6c0b833baedba1a21e6b5133ba826afaf9954c707f0d6c02e394dfe",
+5:"a5f8e47d547462f2a3467e8a31d115cf5707337dc469e23c1d18e25acdaee361",
+6:"cd83481048a604d877b067c2583f7c5587bf133e23b9a348d852308cd45f0a96",
+};
+// Minimal SHA-256 (no crypto.subtle dependency so file:// always works)
+var sha256 = (function(){
+  var K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+           0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+           0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+           0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+           0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+           0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+           0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+           0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  function rr(v, s){ return (v >>> s) | (v << (32 - s)); }
+  return function(message){
+    var msg = unescape(encodeURIComponent(message));
+    var bitLen = msg.length * 8;
+    var words = [];
+    for (var i = 0; i < msg.length; i++) {
+      words[i >> 2] = (words[i >> 2] || 0) | (msg.charCodeAt(i) << (24 - (i % 4) * 8));
+    }
+    words[bitLen >> 5] = (words[bitLen >> 5] || 0) | (0x80 << (24 - bitLen % 32));
+    words[(((bitLen + 64) >>> 9) << 4) + 15] = bitLen;
+    var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    var w = new Array(64);
+    for (var i2 = 0; i2 < words.length; i2 += 16) {
+      var a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+      for (var j = 0; j < 64; j++) {
+        if (j < 16) { w[j] = words[i2 + j] | 0; }
+        else {
+          var s0 = rr(w[j-15],7) ^ rr(w[j-15],18) ^ (w[j-15] >>> 3);
+          var s1 = rr(w[j-2],17) ^ rr(w[j-2],19) ^ (w[j-2] >>> 10);
+          w[j] = (w[j-16] + s0 + w[j-7] + s1) | 0;
+        }
+        var S1 = rr(e,6) ^ rr(e,11) ^ rr(e,25);
+        var ch = (e & f) ^ ((~e) & g);
+        var t1 = (h + S1 + ch + K[j] + w[j]) | 0;
+        var S0 = rr(a,2) ^ rr(a,13) ^ rr(a,22);
+        var maj = (a & b) ^ (a & c) ^ (b & c);
+        var t2 = (S0 + maj) | 0;
+        h=g; g=f; f=e; e=(d+t1)|0; d=c; c=b; b=a; a=(t1+t2)|0;
+      }
+      H[0]=(H[0]+a)|0;H[1]=(H[1]+b)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;
+      H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+    }
+    var out = '';
+    for (var k = 0; k < 8; k++) out += ('00000000' + (H[k] >>> 0).toString(16)).slice(-8);
+    return out;
+  };
+})();
+
+function check(n){
+  const val=document.getElementById('i'+n).value.trim();
+  const msg=document.getElementById('m'+n);
+  const card=document.getElementById('c'+n);
+  const norm=val.replace(/\s+/g,'');
+  if(sha256(norm)===HASHES[n]){
+    msg.textContent='✔ Correct flag! Case '+n+' closed.';
+    msg.className='msg ok';
+    card.classList.add('solved');
+    card.querySelector('.badge').textContent='solved ✔';
+    document.getElementById('l'+n).style.display='block';
+    const done=JSON.parse(localStorage.getItem('ctf.solved')||'[]');
+    if(!done.includes(n)){done.push(n);localStorage.setItem('ctf.solved',JSON.stringify(done));}
+    updateProgress();
+  }else{
+    msg.textContent='✘ Not the flag. Keep digging. (Exact match, including flag{...})';
+    msg.className='msg bad';
+  }
+}
+function updateProgress(){
+  const done=JSON.parse(localStorage.getItem('ctf.solved')||'[]');
+  document.getElementById('barfill').style.width=(done.length/6*100)+'%';
+  document.getElementById('score').textContent=done.length;
+  document.getElementById('ptext2').textContent=done.length===6?' — full breach scope confirmed 🎉':(done.length>=3?' — keep going!':'');
+  if(done.length===6){document.getElementById('finale').style.display='block';document.getElementById('finale').scrollIntoView({behavior:'smooth'});}
+}
+updateProgress();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" nonce="X4O6RCs1jXdr2VDGDSZ65w==" data-cf-beacon='{"version":"2024.11.0","token":"36b4216ae2dc4d5488c249161e71fe1e","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
